@@ -1,13 +1,11 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Link } from 'expo-router';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
-/**
- * Профиль пользователя — более выразительный UI с темой и карточками.
- */
 export default function HomeScreen() {
   const scheme = useColorScheme() ?? 'light';
   const palette = Colors[scheme];
@@ -39,7 +37,7 @@ export default function HomeScreen() {
         </View>
         <Text style={[styles.name, { color: palette.text }]}>Nik Frost</Text>
         <View style={[styles.badge, { backgroundColor: scheme === 'dark' ? '#1e3a4a' : '#e0f2f8' }]}>
-          <Text style={[styles.badgeText, { color: palette.tint }]}>Начинающий разработчик</Text>
+          <Text style={[styles.badgeText, { color: palette.tint }]}>Разработчик</Text>
         </View>
         <Text style={[styles.about, { color: scheme === 'dark' ? '#b8c0c6' : '#4b5563' }]}>
           Здесь коротко о себе: чем занимаюсь и что изучаю в React Native.
@@ -67,6 +65,22 @@ export default function HomeScreen() {
           </View>
         </View>
       </View>
+
+      {/* <Text style={[styles.sectionLabel, { color: palette.icon }]}>Разделы</Text>
+      <Link href="./todo" asChild>
+        <Pressable style={({ pressed }) => [styles.linkCard, c.card, pressed && { opacity: 0.92 }]}>
+          <View style={[styles.contactIconBg, { backgroundColor: scheme === 'dark' ? '#1e2930' : '#eef6f9' }]}>
+            <MaterialCommunityIcons name="format-list-checks" size={22} color={palette.tint} />
+          </View>
+          <View style={styles.contactTexts}>
+            <Text style={[styles.contactLabel, { color: palette.icon }]}>Задачи</Text>
+            <Text style={[styles.contactValue, { color: palette.text }]}>
+              Todo — список дел и отметка выполнения
+            </Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={24} color={palette.icon} />
+        </Pressable>
+      </Link> */}
     </ScrollView>
   );
 }
@@ -212,5 +226,21 @@ const styles = StyleSheet.create({
   contactValue: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  linkCard: {
+    marginHorizontal: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 14,
+    borderRadius: 18,
+    borderWidth: 1,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 3,
   },
 });

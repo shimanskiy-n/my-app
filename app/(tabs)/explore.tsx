@@ -23,9 +23,6 @@ function cellWidth(): number {
   return (windowWidth - PAD * 2 - GAP) / COLS;
 }
 
-/**
- * Галерея — сетка с разной высотой ячеек и мягкими тенями.
- */
 export default function ExploreScreen() {
   const scheme = useColorScheme() ?? 'light';
   const palette = Colors[scheme];

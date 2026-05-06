@@ -1,0 +1,8 @@
+#!/bin/sh
+# Run once per clone (from repo root): git config core.hooksPath .githooks
+commit_msg="$1"
+[ -n "$commit_msg" ] && [ -f "$commit_msg" ] || exit 0
+tmp="${commit_msg}.$$.tmp"
+grep -Fv "cursoragent@cursor.com" "$commit_msg" > "$tmp" || exit 0
+mv "$tmp" "$commit_msg" || rm -f "$tmp"
+exit 0
