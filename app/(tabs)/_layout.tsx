@@ -1,3 +1,4 @@
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 
@@ -35,6 +36,13 @@ export default function TabLayout() {
         options={{
           title: 'Todo',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="calculator"
+        options={{
+          title: 'Счёт',
+          tabBarIcon: ({ color }) => <MaterialIcons name="calculate" size={28} color={color} />,
         }}
       />
     </Tabs>
