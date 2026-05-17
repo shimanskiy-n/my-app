@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useUsersStore } from '@/app/store/usersStore';
 import { Colors } from '@/constants/theme';
-import { fetchUserById, type UserRecord } from '@/services/usersApi';
+import { fetchUserById, type UserRecord } from '@/api/usersApi';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export function UserDetailScreen() {

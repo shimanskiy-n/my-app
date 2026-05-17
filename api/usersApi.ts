@@ -1,4 +1,4 @@
-const BASE_URL = 'https://jsonplaceholder.typicode.com';
+import { placeholderClient } from './client';
 
 export type Geo = { lat: string; lng: string };
 
@@ -28,22 +28,15 @@ export type UserRecord = {
 };
 
 export async function fetchUsers(): Promise<UserRecord[]> {
-  const res = await fetch(`${BASE_URL}/users`);
-  if (!res.ok) throw new Error(`Users load failed (${res.status})`);
-  return res.json() as Promise<UserRecord[]>;
+  const { data } = await placeholderClient.get<UserRecord[]>('/users');
+  return data;
 }
 
 export async function fetchUserById(id: number): Promise<UserRecord> {
-  const res = await fetch(`${BASE_URL}/users/${id}`);
-  if (!res.ok) throw new Error(`User load failed (${res.status})`);
-  return res.json() as Promise<UserRecord>;
+  const { data } = await placeholderClient.get<UserRecord>(`/users/${id}`);
+  return data;
 }
 
 export async function patchUserName(id: number, name: string): Promise<void> {
-  const res = await fetch(`${BASE_URL}/users/${id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name }),
-  });
-  if (!res.ok) throw new Error(`PATCH failed (${res.status})`);
+  await placeholderClient.patch(`/users/${id}`, { name });
 }

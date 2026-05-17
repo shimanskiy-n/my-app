@@ -19,7 +19,7 @@ import {
   isRemoteTodoId,
   postTodoDemo,
   updateTodo,
-} from '@/services/todosApi';
+} from '@/api/todosApi';
 
 import { TodoInput } from './TodoInput';
 import { TodoList } from './TodoList';

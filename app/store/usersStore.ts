@@ -4,7 +4,7 @@ import {
   fetchUsers as fetchUsersApi,
   patchUserName as patchUserNameRequest,
   type UserRecord,
-} from '@/services/usersApi';
+} from '@/api/usersApi';
 
 type UsersState = {
   users: UserRecord[];
