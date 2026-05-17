@@ -39,6 +39,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="users"
+        options={{
+          title: 'Юзеры',
+          tabBarIcon: ({ color }) => <MaterialIcons name="people" size={28} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="calculator"
         options={{
           title: 'Счёт',

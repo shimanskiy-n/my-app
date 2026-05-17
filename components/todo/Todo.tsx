@@ -1,9 +1,25 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import {
+  deleteTodo,
+  fetchTodos,
+  isRemoteTodoId,
+  postTodoDemo,
+  updateTodo,
+} from '@/services/todosApi';
 
 import { TodoInput } from './TodoInput';
 import { TodoList } from './TodoList';
@@ -16,10 +32,9 @@ export function Todo() {
   const palette = Colors[scheme];
   const insets = useSafeAreaInsets();
 
-  const [tasks, setTasks] = useState<TodoTask[]>([
-    { id: '1', title: 'Выпить кофе', done: false },
-    { id: '2', title: 'Пойти спать', done: false },
-  ]);
+  const [tasks, setTasks] = useState<TodoTask[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState('');
   const editInputRef = useRef<TextInput | null>(null);
@@ -31,6 +46,23 @@ export function Todo() {
     }
     return undefined;
   }, [editingId]);
+
+  const reloadTodos = useCallback(async () => {
+    setLoadError(null);
+    setLoading(true);
+    try {
+      const list = await fetchTodos();
+      setTasks(list);
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void reloadTodos();
+  }, [reloadTodos]);
 
   const pageBg = scheme === 'dark' ? '#0c0f12' : '#eef2f6';
   const heroBg = scheme === 'dark' ? '#1e4d6e' : palette.tint;
@@ -49,26 +81,61 @@ export function Todo() {
   const handleAddTodo = useCallback((text: string) => {
     const title = text.trim();
     if (!title) return;
-    setTasks((prev) => [...prev, { id: String(Date.now()), title, done: false }]);
+    const id = String(Date.now());
+    setTasks((prev) => [...prev, { id, title, done: false }]);
+    postTodoDemo(title);
   }, []);
 
   const toggleTask = useCallback((id: string) => {
-    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
-  }, []);
+    setTasks((prev) => {
+      const next = prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
+      const t = prev.find((x) => x.id === id);
+      if (t && isRemoteTodoId(id)) {
+        const done = !t.done;
+        updateTodo(id, { done }).catch(() => {
+          void reloadTodos();
+        });
+      }
+      return next;
+    });
+  }, [reloadTodos]);
 
-  const removeTask = useCallback((id: string, activeEditId: string | null) => {
-    setTasks((prev) => prev.filter((t) => t.id !== id));
-    if (activeEditId === id) {
-      setEditingId(null);
-      setEditDraft('');
-    }
-  }, []);
+  const removeTask = useCallback(
+    (id: string, activeEditId: string | null) => {
+      let shouldDeleteRemote = false;
+      setTasks((prev) => {
+        shouldDeleteRemote = prev.some((t) => t.id === id && isRemoteTodoId(id));
+        return prev.filter((t) => t.id !== id);
+      });
+      if (activeEditId === id) {
+        setEditingId(null);
+        setEditDraft('');
+      }
+      if (shouldDeleteRemote) {
+        deleteTodo(id).catch(() => {
+          void reloadTodos();
+        });
+      }
+    },
+    [reloadTodos],
+  );
 
-  const commitEdit = useCallback((id: string | null, text: string) => {
-    if (!id) return;
-    const trimmed = text.trim();
-    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, title: trimmed || t.title } : t)));
-  }, []);
+  const commitEdit = useCallback(
+    (id: string | null, text: string) => {
+      if (!id) return;
+      const trimmed = text.trim();
+      const nextTitle = trimmed || undefined;
+      setTasks((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, title: trimmed || t.title } : t)),
+      );
+      if (nextTitle && isRemoteTodoId(id)) {
+        updateTodo(id, { title: nextTitle }).catch(() => {
+          void reloadTodos();
+        });
+      }
+    },
+    [reloadTodos],
+  );
 
   const finishEditing = useCallback(() => {
     if (!editingId) return;
@@ -113,35 +180,54 @@ export function Todo() {
           <Text style={styles.heroSubtitle}>{pending} без завершения</Text>
         </View>
 
-        <TodoInput
-          onAdd={handleAddTodo}
-          scheme={scheme}
-          palette={palette}
-          muted={muted}
-          rowBorder={rowBorder}
-          cardStyle={cardStyle}
-        />
+        {loadError ? (
+          <View style={[styles.banner, styles.centerBlock, cardStyle]}>
+            <Text style={[styles.bannerText, { color: palette.text }]}>{loadError}</Text>
+            <Pressable
+              onPress={() => void reloadTodos()}
+              style={[styles.retryBtn, { backgroundColor: palette.tint }]}>
+              <Text style={styles.retryLabel}>Retry</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
-        <Text style={[styles.sectionLabel, { color: palette.icon }]}>
-          Список ({tasks.length})
-        </Text>
+        {loading && tasks.length === 0 && !loadError ? (
+          <View style={[styles.centerBlock]}>
+            <ActivityIndicator size="large" color={palette.tint} accessibilityLabel="Loading todos" />
+          </View>
+        ) : (
+          <>
+            <TodoInput
+              onAdd={handleAddTodo}
+              scheme={scheme}
+              palette={palette}
+              muted={muted}
+              rowBorder={rowBorder}
+              cardStyle={cardStyle}
+            />
 
-        <TodoList
-          tasks={tasks}
-          muted={muted}
-          editingId={editingId}
-          editDraft={editDraft}
-          cardStyle={cardStyle}
-          rowBorder={rowBorder}
-          scheme={scheme}
-          palette={palette}
-          editInputRef={editInputRef}
-          onToggle={toggleTask}
-          onBeginEdit={beginEdit}
-          onEditDraftChange={setEditDraft}
-          onFinishEdit={finishEditing}
-          onRemove={handleRemoveTask}
-        />
+            <Text style={[styles.sectionLabel, { color: palette.icon }]}>
+              Список ({tasks.length})
+            </Text>
+
+            <TodoList
+              tasks={tasks}
+              muted={muted}
+              editingId={editingId}
+              editDraft={editDraft}
+              cardStyle={cardStyle}
+              rowBorder={rowBorder}
+              scheme={scheme}
+              palette={palette}
+              editInputRef={editInputRef}
+              onToggle={toggleTask}
+              onBeginEdit={beginEdit}
+              onEditDraftChange={setEditDraft}
+              onFinishEdit={finishEditing}
+              onRemove={handleRemoveTask}
+            />
+          </>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
@@ -185,5 +271,35 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: 10,
     marginLeft: 20,
+  },
+  centerBlock: {
+    flex: 1,
+    marginHorizontal: 18,
+    minHeight: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  banner: {
+    marginHorizontal: 18,
+    marginBottom: 12,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 10,
+  },
+  bannerText: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  retryBtn: {
+    alignSelf: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+  },
+  retryLabel: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
   },
 });
