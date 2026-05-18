@@ -21,9 +21,14 @@ export function isRemoteTodoId(id: string): boolean {
   return /^\d+$/.test(id);
 }
 
-export async function fetchTodos(): Promise<TodoTask[]> {
+export async function getTodos(): Promise<TodoTask[]> {
   const { data } = await placeholderClient.get<RemoteTodoRow[]>('/todos');
   return data.map(rowToTask);
+}
+
+export async function getTodoById(id: string): Promise<TodoTask> {
+  const { data } = await placeholderClient.get<RemoteTodoRow>(`/todos/${id}`);
+  return rowToTask(data);
 }
 
 export function postTodoDemo(title: string): void {

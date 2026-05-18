@@ -8,6 +8,7 @@ import type { TodoTask } from './types';
 
 type Props = {
   task: TodoTask;
+  isFavorite: boolean;
   isLast: boolean;
   isEditing: boolean;
   editDraft: string;
@@ -16,14 +17,17 @@ type Props = {
   palette: (typeof Colors)['light'] | (typeof Colors)['dark'];
   editInputRef: React.RefObject<TextInput | null>;
   onToggle: () => void;
+  onToggleFavorite: () => void;
   onBeginEdit: () => void;
   onEditDraftChange: (v: string) => void;
   onFinishEdit: () => void;
   onRemove: () => void;
+  onOpenDetail?: () => void;
 };
 
 export function TodoItem({
   task,
+  isFavorite,
   isLast,
   isEditing,
   editDraft,
@@ -32,10 +36,12 @@ export function TodoItem({
   palette,
   editInputRef,
   onToggle,
+  onToggleFavorite,
   onBeginEdit,
   onEditDraftChange,
   onFinishEdit,
   onRemove,
+  onOpenDetail,
 }: Props) {
   return (
     <View
@@ -89,6 +95,18 @@ export function TodoItem({
           </Pressable>
         )}
       </View>
+      {onOpenDetail ? (
+        <Pressable onPress={onOpenDetail} hitSlop={10} style={styles.detailWrap}>
+          <MaterialCommunityIcons name="chevron-right" size={22} color={palette.icon} />
+        </Pressable>
+      ) : null}
+      <Pressable onPress={onToggleFavorite} hitSlop={10} style={styles.starWrap}>
+        <MaterialCommunityIcons
+          name={isFavorite ? 'star' : 'star-outline'}
+          size={24}
+          color={isFavorite ? '#f59e0b' : palette.icon}
+        />
+      </Pressable>
       <Pressable onPress={onRemove} hitSlop={12}>
         <MaterialCommunityIcons name="delete-outline" size={24} color={palette.icon} />
       </Pressable>
@@ -110,6 +128,12 @@ const styles = StyleSheet.create({
   taskTitleWrap: {
     flex: 1,
     minWidth: 0,
+  },
+  detailWrap: {
+    justifyContent: 'center',
+  },
+  starWrap: {
+    justifyContent: 'center',
   },
   taskTitle: {
     fontSize: 16,

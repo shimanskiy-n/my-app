@@ -12,7 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
-import { useUsersStore } from '@/app/store/usersStore';
+import { useUsersStore } from '@/store/usersStore';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export function UsersScreen() {

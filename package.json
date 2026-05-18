@@ -4,15 +4,18 @@
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
-    "tunnel": "expo start --tunnel",
+    "lan": "expo start --lan",
+    "tunnel": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/start-tunnel.ps1",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo start --android",
+    "export:android": "node --max-old-space-size=8192 ./node_modules/expo/bin/cli export --platform android",
+    "android": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/start-android.ps1",
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
+    "@react-native-async-storage/async-storage": "2.2.0",
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",

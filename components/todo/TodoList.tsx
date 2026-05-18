@@ -2,12 +2,14 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Colors } from '@/constants/theme';
+import { isRemoteTodoId } from '@/api/todosApi';
 
 import { TodoItem } from './TodoItem';
 import type { TodoTask } from './types';
 
 type Props = {
   tasks: TodoTask[];
+  favoriteIds: string[];
   muted: string;
   editingId: string | null;
   editDraft: string;
@@ -17,14 +19,17 @@ type Props = {
   palette: (typeof Colors)['light'] | (typeof Colors)['dark'];
   editInputRef: React.RefObject<TextInput | null>;
   onToggle: (id: string) => void;
+  onToggleFavorite: (id: string) => void;
   onBeginEdit: (task: TodoTask) => void;
   onEditDraftChange: (v: string) => void;
   onFinishEdit: () => void;
   onRemove: (taskId: string) => void;
+  onOpenDetail?: (task: TodoTask) => void;
 };
 
 export function TodoList({
   tasks,
+  favoriteIds,
   muted,
   editingId,
   editDraft,
@@ -34,10 +39,12 @@ export function TodoList({
   palette,
   editInputRef,
   onToggle,
+  onToggleFavorite,
   onBeginEdit,
   onEditDraftChange,
   onFinishEdit,
   onRemove,
+  onOpenDetail,
 }: Props) {
   return (
     <View style={styles.outer}>
@@ -54,6 +61,7 @@ export function TodoList({
               <TodoItem
                 key={task.id}
                 task={task}
+                isFavorite={favoriteIds.includes(task.id)}
                 isLast={index === tasks.length - 1}
                 isEditing={editingId === task.id}
                 editDraft={editDraft}
@@ -62,10 +70,14 @@ export function TodoList({
                 palette={palette}
                 editInputRef={editInputRef}
                 onToggle={() => onToggle(task.id)}
+                onToggleFavorite={() => onToggleFavorite(task.id)}
                 onBeginEdit={() => onBeginEdit(task)}
                 onEditDraftChange={onEditDraftChange}
                 onFinishEdit={onFinishEdit}
                 onRemove={() => onRemove(task.id)}
+                onOpenDetail={
+                  onOpenDetail && isRemoteTodoId(task.id) ? () => onOpenDetail(task) : undefined
+                }
               />
             ))}
           </ScrollView>

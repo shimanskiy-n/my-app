@@ -1,3 +1,4 @@
+import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,9 +14,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { loadFavoritesTodo, saveFavoriteTodoIds } from '@/storage/todoFavorites';
 import {
   deleteTodo,
-  fetchTodos,
+  getTodos,
   isRemoteTodoId,
   postTodoDemo,
   updateTodo,
@@ -31,13 +33,33 @@ export function Todo() {
   const scheme = useColorScheme() ?? 'light';
   const palette = Colors[scheme];
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const [tasks, setTasks] = useState<TodoTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState('');
+  const [favoriteIds, setFavorites] = useState<string[]>([]);
+  const [favoritesHydrated, setFavoritesHydrated] = useState(false);
   const editInputRef = useRef<TextInput | null>(null);
+  const tasksRef = useRef<TodoTask[]>([]);
+
+  useEffect(() => {
+    tasksRef.current = tasks;
+  }, [tasks]);
+
+  useEffect(() => {
+    void loadFavoritesTodo().then((ids) => {
+      setFavorites(ids);
+      setFavoritesHydrated(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!favoritesHydrated) return;
+    void saveFavoriteTodoIds(favoriteIds);
+  }, [favoriteIds, favoritesHydrated]);
 
   useEffect(() => {
     if (editingId) {
@@ -48,21 +70,39 @@ export function Todo() {
   }, [editingId]);
 
   const reloadTodos = useCallback(async () => {
+    const silent = tasksRef.current.length > 0;
     setLoadError(null);
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
-      const list = await fetchTodos();
+      const list = await getTodos();
       setTasks(list);
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : 'Unknown error');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    void reloadTodos();
-  }, [reloadTodos]);
+  useFocusEffect(
+    useCallback(() => {
+      void reloadTodos();
+    }, [reloadTodos]),
+  );
+
+  const openTodoDetail = useCallback(
+    (t: TodoTask) => {
+      if (!isRemoteTodoId(t.id)) return;
+      router.push({
+        pathname: '/todo/[id]',
+        params: {
+          id: t.id,
+          title: encodeURIComponent(t.title),
+          done: t.done ? '1' : '0',
+        },
+      });
+    },
+    [router],
+  );
 
   const pageBg = scheme === 'dark' ? '#0c0f12' : '#eef2f6';
   const heroBg = scheme === 'dark' ? '#1e4d6e' : palette.tint;
@@ -86,6 +126,10 @@ export function Todo() {
     postTodoDemo(title);
   }, []);
 
+  const toggleFavorite = useCallback((id: string) => {
+    setFavorites((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }, []);
+
   const toggleTask = useCallback((id: string) => {
     setTasks((prev) => {
       const next = prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
@@ -102,6 +146,7 @@ export function Todo() {
 
   const removeTask = useCallback(
     (id: string, activeEditId: string | null) => {
+      setFavorites((prev) => prev.filter((f) => f !== id));
       let shouldDeleteRemote = false;
       setTasks((prev) => {
         shouldDeleteRemote = prev.some((t) => t.id === id && isRemoteTodoId(id));
@@ -177,7 +222,10 @@ export function Todo() {
           ]}>
           <View style={[styles.heroAccent, { backgroundColor: 'rgba(255,255,255,0.35)' }]} />
           <Text style={styles.heroTitle}>Todo</Text>
-          <Text style={styles.heroSubtitle}>{pending} без завершения</Text>
+          <Text style={styles.heroSubtitle}>
+            {pending} без завершения
+            {favoritesHydrated ? ` · ★ ${favoriteIds.length}` : ''}
+          </Text>
         </View>
 
         {loadError ? (
@@ -212,6 +260,7 @@ export function Todo() {
 
             <TodoList
               tasks={tasks}
+              favoriteIds={favoriteIds}
               muted={muted}
               editingId={editingId}
               editDraft={editDraft}
@@ -221,10 +270,12 @@ export function Todo() {
               palette={palette}
               editInputRef={editInputRef}
               onToggle={toggleTask}
+              onToggleFavorite={toggleFavorite}
               onBeginEdit={beginEdit}
               onEditDraftChange={setEditDraft}
               onFinishEdit={finishEditing}
               onRemove={handleRemoveTask}
+              onOpenDetail={openTodoDetail}
             />
           </>
         )}
